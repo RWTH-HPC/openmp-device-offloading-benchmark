@@ -2,7 +2,7 @@
 #include <omp.h>
 
 #ifndef REPS
-#define REPS 1000
+#define REPS 3000
 #endif
 
 int main(int argc, char const * argv[]) {
@@ -69,13 +69,13 @@ int main(int argc, char const * argv[]) {
         for (int c = 0; c < ncores; c++) {
             if (omp_get_thread_num() == c) {
                 for (int d = 0; d < ndev; d++) {
-                // for (int d = ndev-1; d >= 0; d--) {
                     double ts = omp_get_wtime();
                     for (int r = 0; r < REPS; r++) {
-                        #pragma omp target device(d) map(tofrom:val)
+                        //#pragma omp target device(d) map(tofrom:val)
+                        #pragma omp target device(d)
                         {
-                            // do almost nothing
-                            val += c*d+r;
+                            // do nothing
+                            // val += c*d+r; <== might avoid compiler from optimizing out stuff
                         }
                     }
                     double te = omp_get_wtime();
