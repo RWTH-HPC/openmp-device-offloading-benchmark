@@ -1,0 +1,82 @@
+===== hostname
+electra019
+===== numactl -H
+available: 8 nodes (0-7)
+node 0 cpus: 0 1 2 3
+node 0 size: 64058 MB
+node 0 free: 62851 MB
+node 1 cpus: 4 5 6 7
+node 1 size: 64509 MB
+node 1 free: 63471 MB
+node 2 cpus: 8 9 10 11
+node 2 size: 64509 MB
+node 2 free: 63630 MB
+node 3 cpus: 12 13 14 15
+node 3 size: 64497 MB
+node 3 free: 63907 MB
+node 4 cpus: 16 17 18 19
+node 4 size: 64472 MB
+node 4 free: 63259 MB
+node 5 cpus: 20 21 22 23
+node 5 size: 64509 MB
+node 5 free: 63412 MB
+node 6 cpus: 24 25 26 27
+node 6 size: 64509 MB
+node 6 free: 63682 MB
+node 7 cpus: 28 29 30 31
+node 7 size: 64509 MB
+node 7 free: 63479 MB
+node distances:
+node   0   1   2   3   4   5   6   7 
+  0:  10  12  12  12  32  32  32  32 
+  1:  12  10  12  12  32  32  32  32 
+  2:  12  12  10  12  32  32  32  32 
+  3:  12  12  12  10  32  32  32  32 
+  4:  32  32  32  32  10  12  12  12 
+  5:  32  32  32  32  12  10  12  12 
+  6:  32  32  32  32  12  12  10  12 
+  7:  32  32  32  32  12  12  12  10 
+===== ROCm Info
+
+
+======================= ROCm System Management Interface =======================
+============================ Concise Hardware Info =============================
+GPU  DID   GFX RAS  SDMA RAS  UMC RAS  VBIOS           BUS           
+0    740f  ENABLED  ENABLED   ENABLED  113-D67301-059  0000:23:00.0  
+1    740f  ENABLED  ENABLED   ENABLED  113-D67301-059  0000:83:00.0  
+================================================================================
+============================= End of ROCm SMI Log ==============================
+
+
+======================= ROCm System Management Interface =======================
+================================= Product Info =================================
+Traceback (most recent call last):
+  File "/opt/rocm-5.2.0/bin/rocm-smi", line 3169, in <module>
+    showProductName(deviceList)
+  File "/opt/rocm-5.2.0/bin/rocm-smi", line 2000, in showProductName
+    if rsmi_ret_ok(ret, device) and series.value.decode():
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xff in position 0: invalid start byte
+
+
+======================= ROCm System Management Interface =======================
+=========================== Weight between two GPUs ============================
+       GPU0         GPU1         
+GPU0   0            72           
+GPU1   72           0            
+
+============================ Hops between two GPUs =============================
+       GPU0         GPU1         
+GPU0   0            3            
+GPU1   3            0            
+
+========================== Link Type between two GPUs ==========================
+       GPU0         GPU1         
+GPU0   0            PCIE         
+GPU1   PCIE         0            
+
+================================== Numa Nodes ==================================
+GPU[0]		: (Topology) Numa Node: 2
+GPU[0]		: (Topology) Numa Affinity: 2
+GPU[1]		: (Topology) Numa Node: 7
+GPU[1]		: (Topology) Numa Affinity: 7
+============================= End of ROCm SMI Log ==============================
