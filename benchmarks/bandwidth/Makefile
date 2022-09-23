@@ -3,6 +3,7 @@ CC ?= clang
 CCFLAGS ?= -O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_70
 DBGFLAGS := -g
 CCOBJFLAGS := $(CCFLAGS) -c
+TARGET_EXT ?=
 
 # path macros
 BIN_PATH := bin
@@ -11,7 +12,7 @@ DBG_PATH := debug
 SRC_PATH := .
 
 # compile macros
-TARGET_NAME := gpu_check_bandwidth
+TARGET_NAME := gpu_check_bandwidth_${TARGET_EXT}
 TARGET := $(BIN_PATH)/$(TARGET_NAME)
 TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
 
