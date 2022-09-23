@@ -2,7 +2,7 @@
 #include <omp.h>
 
 #ifndef REPS
-#define REPS 3000
+#define REPS 50000
 #endif
 
 int main(int argc, char const * argv[]) {
@@ -18,6 +18,7 @@ int main(int argc, char const * argv[]) {
     fprintf(stdout, "---------------------------------------------------------------\n");
     fprintf(stdout, "number of cores:   %d\n", ncores);
     fprintf(stdout, "number of devices: %d\n", ndev);
+    fprintf(stdout, "number of repetitions: %d\n", REPS);
     fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Allocate the memory to store the result data.
@@ -71,11 +72,11 @@ int main(int argc, char const * argv[]) {
                 for (int d = 0; d < ndev; d++) {
                     double ts = omp_get_wtime();
                     for (int r = 0; r < REPS; r++) {
-                        //#pragma omp target device(d) map(tofrom:val)
+                        // #pragma omp target device(d) map(tofrom:val)
                         #pragma omp target device(d)
                         {
                             // do nothing
-                            // val += c*d+r; <== might avoid compiler from optimizing out stuff
+                            // val += c*d+r; // <== might avoid compiler from optimizing out stuff
                         }
                     }
                     double te = omp_get_wtime();
