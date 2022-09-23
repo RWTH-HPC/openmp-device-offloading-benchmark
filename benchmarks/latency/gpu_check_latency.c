@@ -23,8 +23,8 @@ int main(int argc, char const * argv[]) {
 
     // Allocate the memory to store the result data.
     latency = (double **)malloc(ncores * sizeof(double *));
-    for (int i = 0; i < ncores; i++) {
-        latency[i] = (double *)malloc(ncores * sizeof(double));
+    for (int c = 0; c < ncores; c++) {
+        latency[c] = (double *)malloc(ndev * sizeof(double));
     }
 
     // Print the OpenMP thread affinity info.

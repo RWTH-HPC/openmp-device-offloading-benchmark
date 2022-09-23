@@ -11,7 +11,7 @@ DBG_PATH := debug
 SRC_PATH := .
 
 # compile macros
-TARGET_NAME := gpu_check_latency
+TARGET_NAME := gpu_check_bandwidth
 TARGET := $(BIN_PATH)/$(TARGET_NAME)
 TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
 
