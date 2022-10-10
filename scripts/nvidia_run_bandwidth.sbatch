@@ -19,6 +19,8 @@ module load cuda/10.2
 
 # switch to directory
 cd ../benchmarks/bandwidth
+# clean first
+TARGET_EXT=${GPU_ARCH} make distclean
 # build app
 TARGET_EXT=${GPU_ARCH} CCFLAGS="-O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=${GPU_ARCH}" make
 # run app

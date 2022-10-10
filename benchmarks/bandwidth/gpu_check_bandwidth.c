@@ -3,7 +3,7 @@
 #include <string.h>
 
 #ifndef REPS
-#define REPS 5
+#define REPS 10
 #endif
 
 int main(int argc, char const * argv[]) {
