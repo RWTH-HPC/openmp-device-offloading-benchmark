@@ -3,7 +3,7 @@
 #include <string.h>
 
 #ifndef REPS
-#define REPS 10
+#define REPS 5
 #endif
 
 int main(int argc, char const * argv[]) {
@@ -72,29 +72,30 @@ int main(int argc, char const * argv[]) {
 
     // Perform the actual measurements.
     fprintf(stdout, "measurements...\n");
-    double val = 0;
     #pragma omp parallel num_threads(ncores)
     {
         for (int c = 0; c < ncores; c++) {
             if (omp_get_thread_num() == c) {
                 for (int s = 0; s < nsizes; s++) {
-                    size_t cur_size = array_sizes_bytes[s];
-
-                    // allocate and initialize data once (first-touch)
-                    char * buffer = (char *)malloc(cur_size);
-                    memset(buffer, 0, cur_size);
+                    size_t cur_size     = array_sizes_bytes[s];
+                    double tmp_size_mb  = ((double)cur_size / 1e6);
 
                     for (int d = 0; d < ndev; d++) {
+                        // allocate and initialize data once (first-touch)
+                        char * buffer = (char *)malloc(cur_size);
+                        memset(buffer, 0, cur_size);
+
                         double ts = omp_get_wtime();
                         for (int r = 0; r < REPS; r++) {
-                            #pragma omp target device(d) map(tofrom:buffer[:cur_size])
+                            #pragma omp target device(d) map(tofrom:buffer[0:cur_size])
                             {
                                 // only touch single element
                                 buffer[0] = 1;
                             }
                         }
                         double te = omp_get_wtime();
-                        bandwidth[s][c][d] = (te - ts) / ((double) REPS) * usec;
+                        double avg_time_sec = (te - ts) / ((double) REPS);
+                        bandwidth[s][c][d] = tmp_size_mb / avg_time_sec;
                         if (!d) {
                             fprintf(stdout, "#");
                             fflush(stdout);
@@ -103,17 +104,16 @@ int main(int argc, char const * argv[]) {
                             fprintf(stdout, ".");
                             fflush(stdout);
                         }
-                    }
 
-                    // free memory again
-                    free(buffer);
+                        // free memory again
+                        free(buffer);
+                    }
                 }
             }
             #pragma omp barrier
         }
     }
     fprintf(stdout, "\n");
-    fprintf(stdout, "dummy=%f\n", val);
     fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Output the result data as CSV to the console.
