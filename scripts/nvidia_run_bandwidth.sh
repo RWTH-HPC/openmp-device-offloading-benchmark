@@ -1,6 +1,9 @@
 #!/bin/bash
 
+RES_DIR="$(pwd)/results"
+mkdir -p ${RES_DIR}
+
 export GPU_ARCH=sm_60
-sbatch --partition=c16g --gres=gpu:pascal:2 --account=supp0001 --export=GPU_ARCH --output=results_bw_c16g.txt nvidia_run_bandwidth.sbatch
+sbatch --partition=c16g --gres=gpu:pascal:2 --account=supp0001 --export=GPU_ARCH --output=${RES_DIR}/results_bw_c16g.txt nvidia_run_bandwidth.sbatch
 export GPU_ARCH=sm_70
-sbatch --partition=c16g --gres=gpu:2 --account=supp0001 --export=GPU_ARCH --output=results_bw_c18g.txt nvidia_run_bandwidth.sbatch
+sbatch --partition=c16g --gres=gpu:2 --account=supp0001 --export=GPU_ARCH --output=${RES_DIR}/results_bw_c18g.txt nvidia_run_bandwidth.sbatch

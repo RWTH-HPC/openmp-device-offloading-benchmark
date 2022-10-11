@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <omp.h>
+#include <float.h>
 
 #ifndef REPS
 #define REPS 50000
@@ -9,6 +10,7 @@ int main(int argc, char const * argv[]) {
     int ncores;
     int ndev;
     double ** latency = NULL;
+    double min_latency = DBL_MAX;
     const double usec = 1000.0 * 1000.0;
 
     // Determine number of cores and devices.
@@ -81,6 +83,9 @@ int main(int argc, char const * argv[]) {
                     }
                     double te = omp_get_wtime();
                     latency[c][d] = (te - ts) / ((double) REPS) * usec;
+                    if(latency[c][d] < min_latency) {
+                        min_latency = latency[c][d];
+                    }
                     if (!d) {
                         fprintf(stdout, "#");
                         fflush(stdout);
@@ -98,7 +103,10 @@ int main(int argc, char const * argv[]) {
     fprintf(stdout, "dummy=%f\n", val);
     fprintf(stdout, "---------------------------------------------------------------\n");
 
-    // Output the result data as CSV to the console.
+
+    fprintf(stdout, "---------------------------------------------------------------\n");
+    fprintf(stdout, "Absolute measurements (ms)\n");
+    fprintf(stdout, "---------------------------------------------------------------\n");
     fprintf(stdout, ";");
     for (int c = 0; c < ncores; c++) {
         fprintf(stdout, "Core %d%c", c, c<ncores-1 ? ';' : '\n');
@@ -107,6 +115,20 @@ int main(int argc, char const * argv[]) {
         fprintf(stdout, "GPU %d;", d);
         for (int c = 0; c < ncores; c++) {
             fprintf(stdout, "%lf%c", latency[c][d], c<ncores-1 ? ';' : '\n');
+        }
+    }
+
+    fprintf(stdout, "---------------------------------------------------------------\n");
+    fprintf(stdout, "Relative measurements to minimum latency\n");
+    fprintf(stdout, "---------------------------------------------------------------\n");
+    fprintf(stdout, ";");
+    for (int c = 0; c < ncores; c++) {
+        fprintf(stdout, "Core %d%c", c, c<ncores-1 ? ';' : '\n');
+    }
+    for (int d = 0; d < ndev; d++) {
+        fprintf(stdout, "GPU %d;", d);
+        for (int c = 0; c < ncores; c++) {
+            fprintf(stdout, "%lf%c", (latency[c][d] / min_latency), c<ncores-1 ? ';' : '\n');
         }
     }
 

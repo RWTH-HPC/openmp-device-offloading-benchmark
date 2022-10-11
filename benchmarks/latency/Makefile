@@ -3,12 +3,12 @@ CC ?= clang
 CCFLAGS ?= -O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_70
 DBGFLAGS := -g
 CCOBJFLAGS := $(CCFLAGS) -c
-TARGET_EXT ?=
+TARGET_EXT ?= default
 
 # path macros
-BIN_PATH := bin
-OBJ_PATH := obj
-DBG_PATH := debug
+BIN_PATH := bin/${TARGET_EXT}
+OBJ_PATH := obj/${TARGET_EXT}
+DBG_PATH := debug/${TARGET_EXT}
 SRC_PATH := .
 
 # compile macros

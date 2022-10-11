@@ -1,3 +1,4 @@
+#include <float.h>
 #include <stdio.h>
 #include <omp.h>
 #include <string.h>
@@ -10,6 +11,7 @@ int main(int argc, char const * argv[]) {
     int ncores;
     int ndev;
     double *** bandwidth = NULL;
+    double * min_bandwidth = NULL;
     const double usec = 1000.0 * 1000.0;
 
     const int nsizes = 7;
@@ -28,8 +30,10 @@ int main(int argc, char const * argv[]) {
 
     // Allocate the memory to store the result data.
     bandwidth = (double ***)malloc(nsizes * sizeof(double **));
+    min_bandwidth = (double *)malloc(nsizes * sizeof(double));
     for (int s = 0; s < nsizes; s++) {
         bandwidth[s] = (double **)malloc(ncores * sizeof(double *));
+        min_bandwidth[s] = DBL_MAX;
         for (int c = 0; c < ncores; c++) {
             bandwidth[s][c] = (double *)malloc(ndev * sizeof(double));
         }
@@ -96,6 +100,9 @@ int main(int argc, char const * argv[]) {
                         double te = omp_get_wtime();
                         double avg_time_sec = (te - ts) / ((double) REPS);
                         bandwidth[s][c][d] = tmp_size_mb / avg_time_sec;
+                        if(bandwidth[s][c][d] < min_bandwidth[s]) {
+                            min_bandwidth[s] = bandwidth[s][c][d];
+                        }
                         if (!d) {
                             fprintf(stdout, "#");
                             fflush(stdout);
@@ -116,7 +123,9 @@ int main(int argc, char const * argv[]) {
     fprintf(stdout, "\n");
     fprintf(stdout, "---------------------------------------------------------------\n");
 
-    // Output the result data as CSV to the console.
+    fprintf(stdout, "---------------------------------------------------------------\n");
+    fprintf(stdout, "Absolute measurements (MB/s)\n");
+    fprintf(stdout, "---------------------------------------------------------------\n");
     for (int s = 0; s < nsizes; s++) {
         size_t cur_size = array_sizes_bytes[s];
         fprintf(stdout, "##### Problem Size: %.2f KB\n", cur_size / 1000.0);
@@ -131,10 +140,7 @@ int main(int argc, char const * argv[]) {
             }
         }
     }
-
     fprintf(stdout, "\n\n");
-
-    // Output the result data as CSV to the console.
     for (int c = 0; c < ncores; c++) {
         fprintf(stdout, "##### Core: %d\n", c);
         fprintf(stdout, ";");
@@ -146,6 +152,39 @@ int main(int argc, char const * argv[]) {
             fprintf(stdout, "GPU %d;", d);
             for (int s = 0; s < nsizes; s++) {
                 fprintf(stdout, "%lf%c", bandwidth[s][c][d], s<nsizes-1 ? ';' : '\n');
+            }
+        }
+    }
+
+    fprintf(stdout, "---------------------------------------------------------------\n");
+    fprintf(stdout, "Relative measurements to minimum bandwidth for size\n");
+    fprintf(stdout, "---------------------------------------------------------------\n");
+    for (int s = 0; s < nsizes; s++) {
+        size_t cur_size = array_sizes_bytes[s];
+        fprintf(stdout, "##### Problem Size: %.2f KB\n", cur_size / 1000.0);
+        fprintf(stdout, ";");
+        for (int c = 0; c < ncores; c++) {
+            fprintf(stdout, "Core %d%c", c, c<ncores-1 ? ';' : '\n');
+        }
+        for (int d = 0; d < ndev; d++) {
+            fprintf(stdout, "GPU %d;", d);
+            for (int c = 0; c < ncores; c++) {
+                fprintf(stdout, "%lf%c", bandwidth[s][c][d] / min_bandwidth[s], c<ncores-1 ? ';' : '\n');
+            }
+        }
+    }
+    fprintf(stdout, "\n\n");
+    for (int c = 0; c < ncores; c++) {
+        fprintf(stdout, "##### Core: %d\n", c);
+        fprintf(stdout, ";");
+        for (int s = 0; s < nsizes; s++) {
+            size_t cur_size = array_sizes_bytes[s];
+            fprintf(stdout, "%.2f KB%c", cur_size / 1000.0, s<nsizes-1 ? ';' : '\n');
+        }
+        for (int d = 0; d < ndev; d++) {
+            fprintf(stdout, "GPU %d;", d);
+            for (int s = 0; s < nsizes; s++) {
+                fprintf(stdout, "%lf%c", bandwidth[s][c][d] / min_bandwidth[s], s<nsizes-1 ? ';' : '\n');
             }
         }
     }
