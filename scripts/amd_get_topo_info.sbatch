@@ -9,6 +9,9 @@ hostname
 echo "===== numactl -H"
 numactl -H
 
+echo "===== lscpu"
+lscpu
+
 echo "===== GPU Info"
 rocm-smi --showhw
 rocm-smi --showproductname
