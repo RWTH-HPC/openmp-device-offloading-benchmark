@@ -6,6 +6,10 @@
 #define REPS 50000
 #endif
 
+#ifndef VERBOSE
+#define VERBOSE 0
+#endif
+
 int main(int argc, char const * argv[]) {
     int ncores;
     int ndev;
@@ -48,6 +52,7 @@ int main(int argc, char const * argv[]) {
                     {
                         // do nothing
                     }
+#if VERBOSE
                     if (!d) {
                         fprintf(stdout, "#");
                         fflush(stdout);
@@ -56,12 +61,15 @@ int main(int argc, char const * argv[]) {
                         fprintf(stdout, ".");
                         fflush(stdout);
                     }
+#endif // VERBOSE
                 }
             }
             #pragma omp barrier
         }
     }
+#if VERBOSE
     fprintf(stdout, "\n");
+#endif // VERBOSE
     fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Perform the actual measurements.
@@ -86,6 +94,7 @@ int main(int argc, char const * argv[]) {
                     if(latency[c][d] < min_latency) {
                         min_latency = latency[c][d];
                     }
+#if VERBOSE
                     if (!d) {
                         fprintf(stdout, "#");
                         fflush(stdout);
@@ -94,12 +103,15 @@ int main(int argc, char const * argv[]) {
                         fprintf(stdout, ".");
                         fflush(stdout);
                     }
+#endif // VERBOSE
                 }
             }
             #pragma omp barrier
         }
     }
+#if VERBOSE
     fprintf(stdout, "\n");
+#endif // VERBOSE
     fprintf(stdout, "dummy=%f\n", val);
     fprintf(stdout, "---------------------------------------------------------------\n");
 
