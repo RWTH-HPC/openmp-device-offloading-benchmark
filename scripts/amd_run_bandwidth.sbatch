@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --time=00:40:00
+#SBATCH --time=01:00:00
 #SBATCH --exclusive
 
 GPU_ARCH=${GPU_ARCH:-"mi250"}
