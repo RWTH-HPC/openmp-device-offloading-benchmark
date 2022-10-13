@@ -3,11 +3,7 @@
 #include <float.h>
 
 #ifndef REPS
-#define REPS 50000
-#endif
-
-#ifndef VERBOSE
-#define VERBOSE 0
+#define REPS 100000
 #endif
 
 int main(int argc, char const * argv[]) {
@@ -52,24 +48,11 @@ int main(int argc, char const * argv[]) {
                     {
                         // do nothing
                     }
-#if VERBOSE
-                    if (!d) {
-                        fprintf(stdout, "#");
-                        fflush(stdout);
-                    }
-                    else {
-                        fprintf(stdout, ".");
-                        fflush(stdout);
-                    }
-#endif // VERBOSE
                 }
             }
             #pragma omp barrier
         }
     }
-#if VERBOSE
-    fprintf(stdout, "\n");
-#endif // VERBOSE
     fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Perform the actual measurements.
@@ -80,6 +63,9 @@ int main(int argc, char const * argv[]) {
         for (int c = 0; c < ncores; c++) {
             if (omp_get_thread_num() == c) {
                 for (int d = 0; d < ndev; d++) {
+                    fprintf(stdout, "running for thread=%3d and device=%2d\n", c, d);
+                    fflush(stdout);
+
                     double ts = omp_get_wtime();
                     for (int r = 0; r < REPS; r++) {
                         // #pragma omp target device(d) map(tofrom:val)
@@ -94,24 +80,11 @@ int main(int argc, char const * argv[]) {
                     if(latency[c][d] < min_latency) {
                         min_latency = latency[c][d];
                     }
-#if VERBOSE
-                    if (!d) {
-                        fprintf(stdout, "#");
-                        fflush(stdout);
-                    }
-                    else {
-                        fprintf(stdout, ".");
-                        fflush(stdout);
-                    }
-#endif // VERBOSE
                 }
             }
             #pragma omp barrier
         }
     }
-#if VERBOSE
-    fprintf(stdout, "\n");
-#endif // VERBOSE
     fprintf(stdout, "dummy=%f\n", val);
     fprintf(stdout, "---------------------------------------------------------------\n");
 
