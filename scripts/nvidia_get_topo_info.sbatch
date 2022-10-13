@@ -12,6 +12,9 @@ numactl -H
 echo "===== lscpu"
 lscpu
 
+echo "===== hwloc"
+hwloc-ls
+
 echo "===== GPU Info"
 nvidia-smi
 nvidia-smi topo -m

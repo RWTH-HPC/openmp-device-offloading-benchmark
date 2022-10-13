@@ -117,7 +117,7 @@ int main(int argc, char const * argv[]) {
 
 
     fprintf(stdout, "---------------------------------------------------------------\n");
-    fprintf(stdout, "Absolute measurements (ms)\n");
+    fprintf(stdout, "Absolute measurements (us)\n");
     fprintf(stdout, "---------------------------------------------------------------\n");
     fprintf(stdout, ";");
     for (int c = 0; c < ncores; c++) {

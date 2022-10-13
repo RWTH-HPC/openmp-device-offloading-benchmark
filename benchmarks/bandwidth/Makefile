@@ -65,8 +65,11 @@ distclean:
 	@echo CLEAN $(DISTCLEAN_LIST)
 	@rm -f $(DISTCLEAN_LIST)
 
-# Note: might be good to disable automatic numabalancing on system
 .PHONY: run
 run:
 	OMP_PLACES=cores OMP_PROC_BIND=close $(TARGET)
-	@#OMP_PLACES=cores OMP_PROC_BIND=close no_numa_balancing $(TARGET)
+
+# Note: might be good to disable automatic numabalancing on system
+.PHONY: run_no_numa
+run_no_numa:
+	OMP_PLACES=cores OMP_PROC_BIND=close no_numa_balancing $(TARGET)
