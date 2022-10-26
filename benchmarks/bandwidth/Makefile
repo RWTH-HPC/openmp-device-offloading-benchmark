@@ -17,7 +17,7 @@ TARGET := $(BIN_PATH)/$(TARGET_NAME)
 TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
 
 # src files & obj files
-SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c*)))
+SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c)))
 OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 OBJ_DEBUG := $(addprefix $(DBG_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 

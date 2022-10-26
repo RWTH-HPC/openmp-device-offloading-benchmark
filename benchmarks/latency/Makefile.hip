@@ -1,6 +1,6 @@
 # tool macros
-CC ?= clang
-CCFLAGS ?= -O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_70
+CC:=hipcc
+CCFLAGS:=-O3 -std=c++17 -fopenmp --offload-arch=gfx90a
 DBGFLAGS := -g
 CCOBJFLAGS := $(CCFLAGS) -c
 TARGET_EXT ?= default
@@ -12,12 +12,12 @@ DBG_PATH := debug/${TARGET_EXT}
 SRC_PATH := .
 
 # compile macros
-TARGET_NAME := gpu_check_latency_${TARGET_EXT}
+TARGET_NAME :=hip_latency_${TARGET_EXT}
 TARGET := $(BIN_PATH)/$(TARGET_NAME)
 TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
 
 # src files & obj files
-SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c)))
+SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.cc)))
 OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 OBJ_DEBUG := $(addprefix $(DBG_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 
@@ -25,8 +25,8 @@ OBJ_DEBUG := $(addprefix $(DBG_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC
 DISTCLEAN_LIST := $(OBJ) \
                   $(OBJ_DEBUG)
 CLEAN_LIST := $(TARGET) \
-			  $(TARGET_DEBUG) \
-			  $(DISTCLEAN_LIST)
+              $(TARGET_DEBUG) \
+              $(DISTCLEAN_LIST)
 
 # default rule
 default: makedir all
