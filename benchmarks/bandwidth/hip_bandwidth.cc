@@ -87,7 +87,7 @@ int main(int argc, char const * argv[]) {
         for (int c = 0; c < ncores; c++) {
             if (omp_get_thread_num() == c) {
                 for (int d = 0; d < ndev; d++) {
-                    #pragma omp target device(d)
+                    HIPCALL(hipSetDevice(d));
                     empty<<<KERNEL_N, 64, 0, nullptr>>>(d, nullptr);
                 }
             }
@@ -110,11 +110,12 @@ int main(int argc, char const * argv[]) {
                     for (int d = 0; d < ndev; d++) {
                         fprintf(stdout, "running for thread=%3d, size=%7.2fMB and device=%2d\n", c, tmp_size_mb, d);
                         fflush(stdout);
+                        HIPCALL(hipSetDevice(d));
                         
                         // allocate and initialize data once (first-touch)
-                        char * buffer_dev = nullptr;
                         // char * buffer = (char *)malloc(cur_size);
                         // memset(buffer, 0, cur_size);
+                        char * buffer_dev = nullptr;
                         char * buffer = per_thread_buffs[cur_thread];
 
                         double ts = omp_get_wtime();

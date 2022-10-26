@@ -66,6 +66,7 @@ int main(int argc, char const * argv[]) {
         for (int c = 0; c < ncores; c++) {
             if (omp_get_thread_num() == c) {
                 for (int d = 0; d < ndev; d++) {
+                    HIPCALL(hipSetDevice(d));
                     empty<<<KERNEL_N, 64, 0, NULL>>>(d);
                 }
             }
@@ -82,6 +83,10 @@ int main(int argc, char const * argv[]) {
         for (int c = 0; c < ncores; c++) {
             if (omp_get_thread_num() == c) {
                 for (int d = 0; d < ndev; d++) {
+                    fprintf(stdout, "running for thread=%3d and device=%2d\n", c, d);
+                    fflush(stdout);
+                    HIPCALL(hipSetDevice(d));
+
                     double ts = omp_get_wtime();
                     for (int r = 0; r < REPS; r++) {
                         empty<<<KERNEL_N, 64, 0, NULL>>>(d);
