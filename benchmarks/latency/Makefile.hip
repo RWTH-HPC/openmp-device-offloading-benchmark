@@ -1,6 +1,7 @@
 # tool macros
-CC:=hipcc
-CCFLAGS:=-O3 -std=c++17 -fopenmp --offload-arch=gfx90a
+CC := hipcc
+REPS ?= 100000
+CCFLAGS:=-O3 -std=c++17 -fopenmp --offload-arch=gfx90a -DREPS=${REPS}
 DBGFLAGS := -g
 CCOBJFLAGS := $(CCFLAGS) -c
 TARGET_EXT ?= default

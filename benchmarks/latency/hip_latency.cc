@@ -24,7 +24,7 @@
     }
 
 
-__global__ void empty(size_t n) {
+__global__ void empty() {
     // do nothing!
 }
 
@@ -67,7 +67,8 @@ int main(int argc, char const * argv[]) {
             if (omp_get_thread_num() == c) {
                 for (int d = 0; d < ndev; d++) {
                     HIPCALL(hipSetDevice(d));
-                    empty<<<KERNEL_N, 64, 0, NULL>>>(d);
+                    empty<<<KERNEL_N, 64, 0, NULL>>>();
+                    HIPCALL(hipStreamSynchronize(nullptr));
                 }
             }
             #pragma omp barrier
@@ -89,7 +90,8 @@ int main(int argc, char const * argv[]) {
 
                     double ts = omp_get_wtime();
                     for (int r = 0; r < REPS; r++) {
-                        empty<<<KERNEL_N, 64, 0, NULL>>>(d);
+                        empty<<<KERNEL_N, 64, 0, NULL>>>();
+                        HIPCALL(hipStreamSynchronize(nullptr));
                     }
                     double te = omp_get_wtime();
                     latency[c][d] = (te - ts) / ((double) REPS) * usec;

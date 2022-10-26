@@ -1,6 +1,7 @@
 # tool macros
 CC ?= clang
-CCFLAGS ?= -O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_70
+REPS ?= 100000
+CCFLAGS ?= -O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_70 -DREPS=${REPS}
 DBGFLAGS := -g
 CCOBJFLAGS := $(CCFLAGS) -c
 TARGET_EXT ?= default

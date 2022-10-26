@@ -1,6 +1,7 @@
 # tool macros
-CC:=hipcc
-CCFLAGS ?= -O3 -std=c++17 -fopenmp --offload-arch=gfx90a
+CC := hipcc
+INCLUDE_ALLOC ?= 1
+CCFLAGS ?= -O3 -std=c++17 -fopenmp --offload-arch=gfx90a -DINCLUDE_ALLOC=${INCLUDE_ALLOC}
 DBGFLAGS := -g
 CCOBJFLAGS := $(CCFLAGS) -c
 TARGET_EXT ?= default

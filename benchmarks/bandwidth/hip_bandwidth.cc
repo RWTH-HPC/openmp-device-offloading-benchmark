@@ -9,6 +9,10 @@
 #define REPS 10
 #endif
 
+#ifndef INCLUDE_ALLOC
+#define INCLUDE_ALLOC 1
+#endif
+
 // least common multiple of 104 and 110 times wavefront size
 #define KERNEL_N (5720 * 64)
 
@@ -89,6 +93,7 @@ int main(int argc, char const * argv[]) {
                 for (int d = 0; d < ndev; d++) {
                     HIPCALL(hipSetDevice(d));
                     empty<<<KERNEL_N, 64, 0, nullptr>>>(d, nullptr);
+                    HIPCALL(hipStreamSynchronize(nullptr));
                 }
             }
             #pragma omp barrier
@@ -117,14 +122,21 @@ int main(int argc, char const * argv[]) {
                         // memset(buffer, 0, cur_size);
                         char * buffer_dev = nullptr;
                         char * buffer = per_thread_buffs[cur_thread];
-
+#if !INCLUDE_ALLOC
+                        HIPCALL(hipMalloc(&buffer_dev, sizeof(*buffer_dev) * cur_size));
+#endif
                         double ts = omp_get_wtime();
                         for (int r = 0; r < REPS; r++) {
+#if INCLUDE_ALLOC
                             HIPCALL(hipMalloc(&buffer_dev, sizeof(*buffer_dev) * cur_size));
+#endif
                             HIPCALL(hipMemcpy(buffer_dev, buffer, sizeof(*buffer) * cur_size, hipMemcpyHostToDevice));
                             empty<<<KERNEL_N, 64, 0, nullptr>>>(cur_size, buffer_dev);
+                            HIPCALL(hipStreamSynchronize(nullptr));
                             HIPCALL(hipMemcpy(buffer, buffer_dev, sizeof(*buffer) * cur_size, hipMemcpyDeviceToHost));
+#if INCLUDE_ALLOC
                             HIPCALL(hipFree(buffer_dev));
+#endif
                         }
                         double te = omp_get_wtime();
                         double avg_time_sec = (te - ts) / ((double) REPS);
@@ -133,8 +145,9 @@ int main(int argc, char const * argv[]) {
                             min_bandwidth[s] = bandwidth[s][c][d];
                         }
 
-                        // free memory again
-                        // free(buffer);
+#if !INCLUDE_ALLOC
+                        HIPCALL(hipFree(buffer_dev));
+#endif
                     }
                 }
             }
