@@ -24,7 +24,7 @@ int main(int argc, char const * argv[]) {
     fprintf(stdout, "---------------------------------------------------------------\n");
     fprintf(stdout, "number of array sizes: %d\n", nsizes);
     fprintf(stdout, "number of cores:   %d\n", ncores);
-    fprintf(stdout, "number of devices: %d\n", ndev);    
+    fprintf(stdout, "number of devices: %d\n", ndev);
     fprintf(stdout, "number of repetitions: %d\n", REPS);
     fprintf(stdout, "---------------------------------------------------------------\n");
 

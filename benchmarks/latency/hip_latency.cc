@@ -5,11 +5,7 @@
 #include <omp.h>
 
 #ifndef REPS
-#define REPS 10
-#endif
-
-#ifndef VERBOSE
-#define VERBOSE 1
+#define REPS 100000
 #endif
 
 // least common multiple of 104 and 110 times wavefront size
@@ -71,24 +67,11 @@ int main(int argc, char const * argv[]) {
             if (omp_get_thread_num() == c) {
                 for (int d = 0; d < ndev; d++) {
                     empty<<<KERNEL_N, 64, 0, NULL>>>(d);
-#if VERBOSE
-                    if (!d) {
-                        fprintf(stdout, "#");
-                        fflush(stdout);
-                    }
-                    else {
-                        fprintf(stdout, ".");
-                        fflush(stdout);
-                    }
-#endif // VERBOSE
                 }
             }
             #pragma omp barrier
         }
     }
-#if VERBOSE
-    fprintf(stdout, "\n");
-#endif // VERBOSE
     fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Perform the actual measurements.
@@ -108,30 +91,17 @@ int main(int argc, char const * argv[]) {
                     if(latency[c][d] < min_latency) {
                         min_latency = latency[c][d];
                     }
-#if VERBOSE
-                    if (!d) {
-                        fprintf(stdout, "#");
-                        fflush(stdout);
-                    }
-                    else {
-                        fprintf(stdout, ".");
-                        fflush(stdout);
-                    }
-#endif // VERBOSE
                 }
             }
             #pragma omp barrier
         }
     }
-#if VERBOSE
-    fprintf(stdout, "\n");
-#endif // VERBOSE
     fprintf(stdout, "dummy=%f\n", val);
     fprintf(stdout, "---------------------------------------------------------------\n");
 
 
     fprintf(stdout, "---------------------------------------------------------------\n");
-    fprintf(stdout, "Absolute measurements (ms)\n");
+    fprintf(stdout, "Absolute measurements (us)\n");
     fprintf(stdout, "---------------------------------------------------------------\n");
     fprintf(stdout, ";");
     for (int c = 0; c < ncores; c++) {

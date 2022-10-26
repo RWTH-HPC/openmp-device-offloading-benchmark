@@ -9,10 +9,6 @@
 #define REPS 10
 #endif
 
-#ifndef VERBOSE
-#define VERBOSE 1
-#endif
-
 // least common multiple of 104 and 110 times wavefront size
 #define KERNEL_N (5720 * 64)
 
@@ -38,10 +34,10 @@ int main(int argc, char const * argv[]) {
     int ndev;
     double *** bandwidth = NULL;
     double * min_bandwidth = NULL;
-    const double usec = 1000.0 * 1000.0;
 
-    const int nsizes = 7;
-    size_t array_sizes_bytes[7] = {1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
+    const int nsizes = 3;
+    size_t array_sizes_bytes[3] = {10000000, 100000000, 1000000000};
+    const size_t MAX_BUF_SIZE = 1000000000;
 
     // Determine number of cores and devices.
     HIPCALL(hipGetDeviceCount(&ndev));
@@ -70,6 +66,17 @@ int main(int argc, char const * argv[]) {
     {
         omp_display_affinity(NULL);
     }
+    
+    // Allocate per thread buffers
+    char ** per_thread_buffs = (char **)malloc(ncores * sizeof(char *));
+    #pragma omp parallel num_threads(ncores)
+    {
+        int cur_thread = omp_get_thread_num();
+        per_thread_buffs[cur_thread] = (char *)malloc(MAX_BUF_SIZE);
+        // init buffer using first-touch
+        memset(per_thread_buffs[cur_thread], 0, MAX_BUF_SIZE);
+    }
+
     fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Perform some warm-up to make sure that all threads are up and running,
@@ -82,41 +89,33 @@ int main(int argc, char const * argv[]) {
                 for (int d = 0; d < ndev; d++) {
                     #pragma omp target device(d)
                     empty<<<KERNEL_N, 64, 0, nullptr>>>(d, nullptr);
-#if VERBOSE
-                    if (!d) {
-                        fprintf(stdout, "#");
-                        fflush(stdout);
-                    }
-                    else {
-                        fprintf(stdout, ".");
-                        fflush(stdout);
-                    }
-#endif // VERBOSE
                 }
             }
             #pragma omp barrier
         }
     }
-#if VERBOSE
-    fprintf(stdout, "\n");
-#endif // VERBOSE
     fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Perform the actual measurements.
     fprintf(stdout, "measurements...\n");
     #pragma omp parallel num_threads(ncores)
     {
+        int cur_thread = omp_get_thread_num();
         for (int c = 0; c < ncores; c++) {
-            if (omp_get_thread_num() == c) {
+            if (cur_thread == c) {
                 for (int s = 0; s < nsizes; s++) {
                     size_t cur_size     = array_sizes_bytes[s];
                     double tmp_size_mb  = ((double)cur_size / 1e6);
 
                     for (int d = 0; d < ndev; d++) {
+                        fprintf(stdout, "running for thread=%3d, size=%7.2fMB and device=%2d\n", c, tmp_size_mb, d);
+                        fflush(stdout);
+                        
                         // allocate and initialize data once (first-touch)
                         char * buffer_dev = nullptr;
-                        char * buffer = (char *)malloc(cur_size);
-                        memset(buffer, 0, cur_size);
+                        // char * buffer = (char *)malloc(cur_size);
+                        // memset(buffer, 0, cur_size);
+                        char * buffer = per_thread_buffs[cur_thread];
 
                         double ts = omp_get_wtime();
                         for (int r = 0; r < REPS; r++) {
@@ -125,41 +124,29 @@ int main(int argc, char const * argv[]) {
                             empty<<<KERNEL_N, 64, 0, nullptr>>>(cur_size, buffer_dev);
                             HIPCALL(hipMemcpy(buffer, buffer_dev, sizeof(*buffer) * cur_size, hipMemcpyDeviceToHost));
                             HIPCALL(hipFree(buffer_dev));
-/*                            #pragma omp target device(d) map(tofrom:buffer[0:cur_size])
-                            {
-                                // only touch single element
-                                buffer[0] = 1;
-                            }
-*/                        }
+                        }
                         double te = omp_get_wtime();
                         double avg_time_sec = (te - ts) / ((double) REPS);
-                        bandwidth[s][c][d] = tmp_size_mb / avg_time_sec;
+                        bandwidth[s][c][d] = tmp_size_mb * 2 / avg_time_sec;
                         if(bandwidth[s][c][d] < min_bandwidth[s]) {
                             min_bandwidth[s] = bandwidth[s][c][d];
                         }
-#if VERBOSE
-                        if (!d) {
-                            fprintf(stdout, "#");
-                            fflush(stdout);
-                        }
-                        else {
-                            fprintf(stdout, ".");
-                            fflush(stdout);
-                        }
-#endif // VERBOSE
 
                         // free memory again
-                        free(buffer);
+                        // free(buffer);
                     }
                 }
             }
             #pragma omp barrier
         }
     }
-#if VERBOSE
-    fprintf(stdout, "\n");
-#endif // VERBOSE
     fprintf(stdout, "---------------------------------------------------------------\n");
+
+    // free memory and cleanup
+    for(int i = 0; i < ncores; i++) {
+        free(per_thread_buffs[i]);
+    }
+    free(per_thread_buffs);
 
     fprintf(stdout, "---------------------------------------------------------------\n");
     fprintf(stdout, "Absolute measurements (MB/s)\n");
