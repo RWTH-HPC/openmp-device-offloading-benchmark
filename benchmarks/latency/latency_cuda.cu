@@ -35,11 +35,11 @@ int main(int argc, char const * argv[]) {
         latency[c] = (double *)malloc(ndev * sizeof(double));
     }
 
-    // // Print the OpenMP thread affinity info.
-    // #pragma omp parallel num_threads(ncores)
-    // {
-    //     omp_display_affinity(NULL);
-    // }
+    // Print the OpenMP thread affinity info.
+    /*#pragma omp parallel num_threads(ncores)
+    {
+        omp_display_affinity(NULL);
+    }*/
     fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Perform some warm-up to make sure that all threads are up and running,
