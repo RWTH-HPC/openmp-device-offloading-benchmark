@@ -13,7 +13,7 @@ DBG_PATH := debug/${TARGET_EXT}
 SRC_PATH := .
 
 # compile macros
-TARGET_NAME := gpu_check_latency_${TARGET_EXT}
+TARGET_NAME := latency_omp_${TARGET_EXT}
 TARGET := $(BIN_PATH)/$(TARGET_NAME)
 TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
 
@@ -68,4 +68,4 @@ distclean:
 
 .PHONY: run
 run:
-	OMP_PLACES=cores OMP_PROC_BIND=close $(TARGET)
+	$(TARGET)

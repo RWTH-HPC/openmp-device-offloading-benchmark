@@ -13,7 +13,7 @@ DBG_PATH := debug/${TARGET_EXT}
 SRC_PATH := .
 
 # compile macros
-TARGET_NAME := hip_bandwidth_${TARGET_EXT}
+TARGET_NAME := bandwidth_hip_${TARGET_EXT}
 TARGET := $(BIN_PATH)/$(TARGET_NAME)
 TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
 
@@ -69,5 +69,4 @@ distclean:
 # Note: might be good to disable automatic numabalancing on system
 .PHONY: run
 run:
-	OMP_PLACES=cores OMP_PROC_BIND=close $(TARGET)
-	@#OMP_PLACES=cores OMP_PROC_BIND=close no_numa_balancing $(TARGET)
+	$(TARGET)

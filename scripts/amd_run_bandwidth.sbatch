@@ -17,6 +17,9 @@ echo "===== Experiments"
 # switch to directory
 cd ../benchmarks/bandwidth
 
+export OMP_PLACES=`numactl -H | grep cpus | awk '(NF>3) {for (i = 4; i <= NF; i++) printf "%d,", $i}' | sed 's/.$//'`
+export OMP_PROC_BIND=close
+
 if [[ "${USE_HIP}" = "1" ]]
 then
     # clean first

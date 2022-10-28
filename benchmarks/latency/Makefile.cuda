@@ -1,6 +1,7 @@
 # tool macros
-CC ?= clang
-CCFLAGS ?= -O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_70
+CC := nvcc
+REPS ?= 100000
+CCFLAGS ?= -O3 -Xcompiler -std=gnu99 -Xcompiler -fopenmp -DREPS=${REPS}
 DBGFLAGS := -g
 CCOBJFLAGS := $(CCFLAGS) -c
 TARGET_EXT ?= default
@@ -12,12 +13,12 @@ DBG_PATH := debug/${TARGET_EXT}
 SRC_PATH := .
 
 # compile macros
-TARGET_NAME := bandwidth_omp_${TARGET_EXT}
+TARGET_NAME := latency_cuda_${TARGET_EXT}
 TARGET := $(BIN_PATH)/$(TARGET_NAME)
 TARGET_DEBUG := $(DBG_PATH)/$(TARGET_NAME)
 
 # src files & obj files
-SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.c)))
+SRC := $(foreach x, $(SRC_PATH), $(wildcard $(addprefix $(x)/*,.cu)))
 OBJ := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 OBJ_DEBUG := $(addprefix $(DBG_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC)))))
 
@@ -68,8 +69,3 @@ distclean:
 .PHONY: run
 run:
 	$(TARGET)
-
-# Note: might be good to disable automatic numabalancing on system
-.PHONY: run_no_numa
-run_no_numa:
-	no_numa_balancing $(TARGET)

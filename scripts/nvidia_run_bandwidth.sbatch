@@ -17,6 +17,9 @@ module load DEVELOP
 module load clang/12
 module load cuda/10.2
 
+export OMP_PLACES=`numactl -H | grep cpus | awk '(NF>3) {for (i = 4; i <= NF; i++) printf "%d,", $i}' | sed 's/.$//'`
+export OMP_PROC_BIND=close
+
 # switch to directory
 cd ../benchmarks/bandwidth
 # clean first
