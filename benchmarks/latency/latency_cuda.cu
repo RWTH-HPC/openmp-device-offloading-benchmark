@@ -23,10 +23,24 @@ int main(int argc, char const * argv[]) {
     cudaGetDeviceCount(&ndev);
     ncores = omp_get_num_procs();
 
+    // get representative data to fill device
+    int max_threads_per_block = 0;
+    int max_threads_per_mp = 0;
+    int mp_count = 0;
+    cudaDeviceGetAttribute (&max_threads_per_block, cudaDevAttrMaxThreadsPerBlock, 0);
+    cudaDeviceGetAttribute (&max_threads_per_mp, cudaDevAttrMaxThreadsPerMultiProcessor, 0);
+    cudaDeviceGetAttribute (&mp_count, cudaDevAttrMultiProcessorCount, 0);
+    int n_blocks_to_start = (max_threads_per_mp / max_threads_per_block) * mp_count;
+
     fprintf(stdout, "---------------------------------------------------------------\n");
     fprintf(stdout, "number of cores:   %d\n", ncores);
     fprintf(stdout, "number of devices: %d\n", ndev);
     fprintf(stdout, "number of repetitions: %d\n", REPS);
+    fprintf(stdout, "---------------------------------------------------------------\n");
+    fprintf(stdout, "mp_count: %d\n", mp_count);
+    fprintf(stdout, "max_threads_per_block: %d\n", max_threads_per_block);
+    fprintf(stdout, "max_threads_per_mp: %d\n", max_threads_per_mp);
+    fprintf(stdout, "n_blocks_to_start: %d\n", n_blocks_to_start);
     fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Allocate the memory to store the result data.
@@ -51,7 +65,7 @@ int main(int argc, char const * argv[]) {
             if (omp_get_thread_num() == c) {
                 for (int d = 0; d < ndev; d++) {
                     cudaSetDevice(d);
-                    empty<<<1,1>>>();
+                    empty<<<n_blocks_to_start, max_threads_per_block>>>();
                     cudaDeviceSynchronize();
                 }
             }
@@ -74,7 +88,7 @@ int main(int argc, char const * argv[]) {
 
                     double ts = omp_get_wtime();
                     for (int r = 0; r < REPS; r++) {
-                        empty<<<1,1>>>();
+                        empty<<<n_blocks_to_start, max_threads_per_block>>>();
                         cudaDeviceSynchronize();
                     }
                     double te = omp_get_wtime();
