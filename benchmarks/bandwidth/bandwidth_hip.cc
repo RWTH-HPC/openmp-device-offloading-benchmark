@@ -36,6 +36,7 @@ __global__ void empty(size_t n, char * array) {
 int main(int argc, char const * argv[]) {
     int ncores;
     int ndev;
+    double *** times_abs = NULL;
     double *** bandwidth = NULL;
     double * min_bandwidth = NULL;
 
@@ -58,13 +59,16 @@ int main(int argc, char const * argv[]) {
     hipStream_t * stream = new hipStream_t[ndev];
 
     // Allocate the memory to store the result data.
+    times_abs = (double ***)malloc(nsizes * sizeof(double **));
     bandwidth = (double ***)malloc(nsizes * sizeof(double **));
     min_bandwidth = (double *)malloc(nsizes * sizeof(double));
     for (int s = 0; s < nsizes; s++) {
+        times_abs[s] = (double **)malloc(ncores * sizeof(double *));
         bandwidth[s] = (double **)malloc(ncores * sizeof(double *));
         min_bandwidth[s] = DBL_MAX;
         for (int c = 0; c < ncores; c++) {
-            bandwidth[s][c] = (double *)malloc(ndev * sizeof(double));
+            times_abs[s][c] = (double *)malloc(ndev * sizeof(double));
+            bandwidth[s][c] = (double *)malloc(ndev * sizeof(double));            
         }
     }
 
@@ -121,9 +125,6 @@ int main(int argc, char const * argv[]) {
                         fflush(stdout);
                         HIPCALL(hipSetDevice(d));
                         
-                        // allocate and initialize data once (first-touch)
-                        // char * buffer = (char *)malloc(cur_size);
-                        // memset(buffer, 0, cur_size);
                         char * buffer_dev = nullptr;
                         char * buffer = per_thread_buffs[cur_thread];
 #if !INCLUDE_ALLOC
@@ -147,6 +148,7 @@ int main(int argc, char const * argv[]) {
 #endif
                         double te = omp_get_wtime();
                         double avg_time_sec = (te - ts) / ((double) REPS);
+                        times_abs[s][c][d] = (te - ts);
                         bandwidth[s][c][d] = tmp_size_mb * 2 / avg_time_sec;
                         if(bandwidth[s][c][d] < min_bandwidth[s]) {
                             min_bandwidth[s] = bandwidth[s][c][d];
@@ -162,12 +164,24 @@ int main(int argc, char const * argv[]) {
     }
     fprintf(stdout, "---------------------------------------------------------------\n");
 
-    // free memory and cleanup
-    for(int i = 0; i < ncores; i++) {
-        free(per_thread_buffs[i]);
+    fprintf(stdout, "---------------------------------------------------------------\n");
+    fprintf(stdout, "Absolute times (sec)\n");
+    fprintf(stdout, "---------------------------------------------------------------\n");
+    for (int s = 0; s < nsizes; s++) {
+        size_t cur_size = array_sizes_bytes[s];
+        fprintf(stdout, "##### Problem Size: %.2f KB\n", cur_size / 1000.0);
+        fprintf(stdout, ";");
+        for (int c = 0; c < ncores; c++) {
+            fprintf(stdout, "Core %d%c", c, c<ncores-1 ? ';' : '\n');
+        }
+        for (int d = 0; d < ndev; d++) {
+            fprintf(stdout, "GPU %d;", d);
+            for (int c = 0; c < ncores; c++) {
+                fprintf(stdout, "%lf%c", times_abs[s][c][d], c<ncores-1 ? ';' : '\n');
+            }
+        }
     }
-    free(per_thread_buffs);
-
+    
     fprintf(stdout, "---------------------------------------------------------------\n");
     fprintf(stdout, "Absolute measurements (MB/s)\n");
     fprintf(stdout, "---------------------------------------------------------------\n");
@@ -234,16 +248,24 @@ int main(int argc, char const * argv[]) {
         }
     }
 
-    // cleanup
+    // free memory and cleanup
+    for(int i = 0; i < ncores; i++) {
+        free(per_thread_buffs[i]);
+    }
+    free(per_thread_buffs);
+    
     delete[] stream;
 
     for (int s = 0; s < nsizes; s++) {
         for (int c = 0; c < ncores; c++) {
             free(bandwidth[s][c]);
+            free(times_abs[s][c]);
         }
         free(bandwidth[s]);
+        free(times_abs[s]);
     }
     free(bandwidth);
+    free(times_abs);
     free(min_bandwidth);
 
     return 0;
