@@ -10,7 +10,7 @@
 #endif
 
 #ifndef INCLUDE_ALLOC
-#define INCLUDE_ALLOC 1
+#define INCLUDE_ALLOC 0
 #endif
 
 // least common multiple of 104 and 110 times wavefront size
@@ -54,6 +54,9 @@ int main(int argc, char const * argv[]) {
     fprintf(stdout, "number of repetitions: %d\n", REPS);
     fprintf(stdout, "---------------------------------------------------------------\n");
 
+    // Streams to the devices
+    hipStream_t * stream = new hipStream_t[ndev];
+
     // Allocate the memory to store the result data.
     bandwidth = (double ***)malloc(nsizes * sizeof(double **));
     min_bandwidth = (double *)malloc(nsizes * sizeof(double));
@@ -92,8 +95,9 @@ int main(int argc, char const * argv[]) {
             if (omp_get_thread_num() == c) {
                 for (int d = 0; d < ndev; d++) {
                     HIPCALL(hipSetDevice(d));
-                    empty<<<KERNEL_N, 64, 0, nullptr>>>(d, nullptr);
-                    HIPCALL(hipStreamSynchronize(nullptr));
+                    HIPCALL(hipStreamCreate(&stream[d]));
+                    empty<<<KERNEL_N, 64, 0, stream[d]>>>(d, nullptr);
+                    HIPCALL(hipStreamSynchronize(stream[d]));
                 }
             }
             #pragma omp barrier
@@ -130,21 +134,23 @@ int main(int argc, char const * argv[]) {
 #if INCLUDE_ALLOC
                             HIPCALL(hipMalloc(&buffer_dev, sizeof(*buffer_dev) * cur_size));
 #endif
-                            HIPCALL(hipMemcpy(buffer_dev, buffer, sizeof(*buffer) * cur_size, hipMemcpyHostToDevice));
-                            empty<<<KERNEL_N, 64, 0, nullptr>>>(cur_size, buffer_dev);
-                            HIPCALL(hipStreamSynchronize(nullptr));
-                            HIPCALL(hipMemcpy(buffer, buffer_dev, sizeof(*buffer) * cur_size, hipMemcpyDeviceToHost));
+                            HIPCALL(hipMemcpyHtoDAsync(buffer_dev, buffer, sizeof(*buffer) * cur_size, stream[d]));
+                            empty<<<KERNEL_N, 64, 0, stream[d]>>>(cur_size, buffer_dev);
+                            HIPCALL(hipMemcpyDtoHAsync(buffer, buffer_dev, sizeof(*buffer) * cur_size, stream[d]));
 #if INCLUDE_ALLOC
+                            HIPCALL(hipStreamSynchronize(stream[d]));
                             HIPCALL(hipFree(buffer_dev));
 #endif
                         }
+#if !INCLUDE_ALLOC
+                        HIPCALL(hipStreamSynchronize(stream[d]));
+#endif
                         double te = omp_get_wtime();
                         double avg_time_sec = (te - ts) / ((double) REPS);
                         bandwidth[s][c][d] = tmp_size_mb * 2 / avg_time_sec;
                         if(bandwidth[s][c][d] < min_bandwidth[s]) {
                             min_bandwidth[s] = bandwidth[s][c][d];
                         }
-
 #if !INCLUDE_ALLOC
                         HIPCALL(hipFree(buffer_dev));
 #endif
@@ -227,6 +233,18 @@ int main(int argc, char const * argv[]) {
             }
         }
     }
+
+    // cleanup
+    delete[] stream;
+
+    for (int s = 0; s < nsizes; s++) {
+        for (int c = 0; c < ncores; c++) {
+            free(bandwidth[s][c]);
+        }
+        free(bandwidth[s]);
+    }
+    free(bandwidth);
+    free(min_bandwidth);
 
     return 0;
 }

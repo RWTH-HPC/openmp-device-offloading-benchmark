@@ -39,15 +39,15 @@ int main(int argc, char const * argv[]) {
     HIPCALL(hipGetDeviceCount(&ndev));
     ncores = omp_get_num_procs();
 
-    // Streams to the devices
-    hipStream_t * stream = new hipStream_t[ndev];
-
     fprintf(stdout, "---------------------------------------------------------------\n");
     fprintf(stdout, "number of cores:   %d\n", ncores);
     fprintf(stdout, "number of devices: %d\n", ndev);
     fprintf(stdout, "number of repetitions: %d\n", REPS);
     fprintf(stdout, "---------------------------------------------------------------\n");
 
+    // Streams to the devices
+    hipStream_t * stream = new hipStream_t[ndev];
+    
     // Allocate the memory to store the result data.
     latency = (double **)malloc(ncores * sizeof(double *));
     for (int c = 0; c < ncores; c++) {
@@ -137,6 +137,14 @@ int main(int argc, char const * argv[]) {
             fprintf(stdout, "%lf%c", (latency[c][d] / min_latency), c<ncores-1 ? ';' : '\n');
         }
     }
+
+    // cleanup
+    delete[] stream;
+    
+    for (int c = 0; c < ncores; c++) {
+        free(latency[c]);
+    }
+    free(latency);
 
     return 0;
 }
