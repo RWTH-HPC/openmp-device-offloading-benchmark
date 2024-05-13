@@ -15,9 +15,8 @@ numactl -H
 
 echo "===== Experiments"
 module purge
-module load DEVELOP
-module load clang/12
-module load cuda/10.2
+module load GCCcore/.12.3.0
+module load Clang/16.0.6-CUDA-12.1.1
 
 # switch to directory
 cd ../benchmarks/bandwidth
