@@ -66,7 +66,11 @@ distclean:
 	@echo CLEAN $(DISTCLEAN_LIST)
 	@rm -f $(DISTCLEAN_LIST)
 
-# Note: might be good to disable automatic numabalancing on system
 .PHONY: run
 run:
 	$(TARGET)
+
+# Note: might be good to disable automatic numabalancing on system
+.PHONY: run_no_numa
+run_no_numa:
+	no_numa_balancing $(TARGET)

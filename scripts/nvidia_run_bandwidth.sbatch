@@ -31,7 +31,7 @@ then
     # build app
     TARGET_EXT=${GPU_ARCH} make -f Makefile.cuda INCLUDE_ALLOC=${INCLUDE_ALLOC}
     # run app
-    TARGET_EXT=${GPU_ARCH} make -f Makefile.cuda run
+    TARGET_EXT=${GPU_ARCH} make -f Makefile.cuda run_no_numa
 else
     # clean first
     TARGET_EXT=${GPU_ARCH} make clean
