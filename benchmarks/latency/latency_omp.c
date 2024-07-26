@@ -1,3 +1,7 @@
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <float.h>
 #include <mpi.h>
 #include <numa.h>
@@ -30,17 +34,17 @@ int main(int argc, char *argv[])
 
     if (rank == 0)
     {
-        fprintf(stdout, "---------------------------------------------------------------\n");
-        fprintf(stdout, "number of cores on system:   %d\n", ncores);
-        fprintf(stdout, "number of processes:   %d\n", world_size);
-        fprintf(stdout, "number of devices: %d\n", ndev);
-        fprintf(stdout, "number of repetitions: %d\n", REPS);
-        fprintf(stdout, "---------------------------------------------------------------\n");
+        fprintf(stderr, "---------------------------------------------------------------\n");
+        fprintf(stderr, "number of cores for process: %d\n", ncores);
+        fprintf(stderr, "number of processes: %d\n", world_size);
+        fprintf(stderr, "number of devices: %d\n", ndev);
+        fprintf(stderr, "number of repetitions: %d\n", REPS);
+        fprintf(stderr, "---------------------------------------------------------------\n");
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
     // Allocate the memory to store the result data.
-    latency_pp = (double *)malloc(ndev * sizeof(double *));
+    latency_pp = (double *)malloc(ndev * sizeof(double));
 
     for (int c = 0; c < world_size; c++)
     {
@@ -48,18 +52,26 @@ int main(int argc, char *argv[])
         {
             int cpu = sched_getcpu();
             int numa = numa_node_of_cpu(cpu);
-            fprintf(stdout, "Process %3d running at core %3d on NUMA domain %3d\n", rank, cpu, numa);
+            fprintf(stderr, "Process %3d running at core %3d on NUMA domain %3d\n", rank, cpu, numa);
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
+    MPI_Barrier(MPI_COMM_WORLD);
 
     if (rank == 0)
-        fprintf(stdout, "---------------------------------------------------------------\n");
+    {
+        fprintf(stderr, "---------------------------------------------------------------\n");
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
 
     // Perform some warm-up to make sure that all threads are up and running,
     // and the GPUs have been properly initialized.
     if (rank == 0)
-        fprintf(stdout, "warm up...\n");
+    {
+        fprintf(stderr, "warm up...\n");
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
     for (int c = 0; c < world_size; c++)
     {
         if (rank == c)
@@ -74,12 +86,17 @@ int main(int argc, char *argv[])
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
+
     if (rank == 0)
-        fprintf(stdout, "---------------------------------------------------------------\n");
+    {
+        fprintf(stderr, "---------------------------------------------------------------\n");
+    }
 
     // Perform the actual measurements.
     if (rank == 0)
-        fprintf(stdout, "measurements...\n");
+    {
+        fprintf(stderr, "measurements...\n");
+    }
     MPI_Barrier(MPI_COMM_WORLD);
 
     double val = 0;
@@ -89,8 +106,7 @@ int main(int argc, char *argv[])
         {
             for (int d = 0; d < ndev; d++)
             {
-                fprintf(stdout, "running for process=%3d and device=%2d\n", c, d);
-                fflush(stdout);
+                fprintf(stderr, "running for process=%3d and device=%2d\n", c, d);
 
                 double ts = omp_get_wtime();
                 for (int r = 0; r < REPS; r++)
@@ -108,18 +124,20 @@ int main(int argc, char *argv[])
                 {
                     min_latency = latency_pp[d];
                 }
+                fprintf(stderr, "  avg. lat = %f\n", latency_pp[d]);
             }
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
     if (rank == 0)
-        fprintf(stdout, "dummy=%f\n", val);
-    if (rank == 0)
-        fprintf(stdout, "---------------------------------------------------------------\n");
+    {
+        fprintf(stderr, "dummy=%f\n", val);
+        fprintf(stderr, "---------------------------------------------------------------\n");
+    }
 
     if (rank == 0)
     {
-        latency = (double *)malloc(world_size * ndev * sizeof(double *));
+        latency = (double *)malloc(world_size * ndev * sizeof(double));
     }
 
     MPI_Gather(latency_pp, ndev, MPI_DOUBLE, latency, ndev, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -127,38 +145,38 @@ int main(int argc, char *argv[])
 
     if (rank == 0)
     {
-        fprintf(stdout, "---------------------------------------------------------------\n");
-        fprintf(stdout, "Absolute measurements (us)\n");
-        fprintf(stdout, "---------------------------------------------------------------\n");
-        fprintf(stdout, ";");
+        fprintf(stderr, "---------------------------------------------------------------\n");
+        fprintf(stderr, "Absolute measurements (us)\n");
+        fprintf(stderr, "---------------------------------------------------------------\n");
+        fprintf(stderr, ";");
         for (int c = 0; c < world_size; c++)
         {
-            fprintf(stdout, "Process %d%c", c, c < world_size - 1 ? ';' : '\n');
+            fprintf(stderr, "Process %d%c", c, c < world_size - 1 ? ';' : '\n');
         }
+
         for (int d = 0; d < ndev; d++)
         {
-            fprintf(stdout, "GPU %d;", d);
+            fprintf(stderr, "GPU %d;", d);
             for (int c = 0; c < world_size; c++)
             {
-                fprintf(stdout, "%lf%c", latency[c * world_size + d], c < world_size - 1 ? ';' : '\n');
+                fprintf(stderr, "%lf%c", latency[c * ndev + d], c < world_size - 1 ? ';' : '\n');
             }
         }
 
-        fprintf(stdout, "---------------------------------------------------------------\n");
-        fprintf(stdout, "Relative measurements to minimum latency\n");
-        fprintf(stdout, "---------------------------------------------------------------\n");
-        fprintf(stdout, ";");
+        fprintf(stderr, "---------------------------------------------------------------\n");
+        fprintf(stderr, "Relative measurements to minimum latency\n");
+        fprintf(stderr, "---------------------------------------------------------------\n");
+        fprintf(stderr, ";");
         for (int c = 0; c < world_size; c++)
         {
-            fprintf(stdout, "Process %d%c", c, c < world_size - 1 ? ';' : '\n');
+            fprintf(stderr, "Process %d%c", c, c < world_size - 1 ? ';' : '\n');
         }
         for (int d = 0; d < ndev; d++)
         {
-            fprintf(stdout, "GPU %d;", d);
+            fprintf(stderr, "GPU %d;", d);
             for (int c = 0; c < world_size; c++)
             {
-                fprintf(stdout, "%lf%c", (latency[c * world_size + d] / global_min_latency),
-                        c < world_size - 1 ? ';' : '\n');
+                fprintf(stderr, "%lf%c", (latency[c * ndev + d] / global_min_latency), c < world_size - 1 ? ';' : '\n');
             }
         }
         free(latency);

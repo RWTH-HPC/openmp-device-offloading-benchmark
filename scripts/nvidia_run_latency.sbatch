@@ -15,7 +15,7 @@ numactl -H
 echo "===== Experiments"
 module purge
 module load iimpi/2023a
-module load Clang/16.0.6-CUDA-12.1.1
+module load Clang/18.1.2-CUDA-12.3.0
 
 # switch to directory
 cd ../benchmarks/latency
