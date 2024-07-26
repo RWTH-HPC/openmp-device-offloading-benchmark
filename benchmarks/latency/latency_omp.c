@@ -28,12 +28,16 @@ int main(int argc, char *argv[])
     ndev = omp_get_num_devices();
     ncores = omp_get_num_procs();
 
-    fprintf(stdout, "---------------------------------------------------------------\n");
-    fprintf(stdout, "number of cores on system:   %d\n", ncores);
-    fprintf(stdout, "number of processes:   %d\n", world_size);
-    fprintf(stdout, "number of devices: %d\n", ndev);
-    fprintf(stdout, "number of repetitions: %d\n", REPS);
-    fprintf(stdout, "---------------------------------------------------------------\n");
+    if (rank == 0)
+    {
+        fprintf(stdout, "---------------------------------------------------------------\n");
+        fprintf(stdout, "number of cores on system:   %d\n", ncores);
+        fprintf(stdout, "number of processes:   %d\n", world_size);
+        fprintf(stdout, "number of devices: %d\n", ndev);
+        fprintf(stdout, "number of repetitions: %d\n", REPS);
+        fprintf(stdout, "---------------------------------------------------------------\n");
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
 
     // Allocate the memory to store the result data.
     latency_pp = (double *)malloc(ndev * sizeof(double *));
@@ -48,11 +52,14 @@ int main(int argc, char *argv[])
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
-    fprintf(stdout, "---------------------------------------------------------------\n");
+
+    if (rank == 0)
+        fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Perform some warm-up to make sure that all threads are up and running,
     // and the GPUs have been properly initialized.
-    fprintf(stdout, "warm up...\n");
+    if (rank == 0)
+        fprintf(stdout, "warm up...\n");
     for (int c = 0; c < world_size; c++)
     {
         if (rank == c)
@@ -67,10 +74,14 @@ int main(int argc, char *argv[])
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
-    fprintf(stdout, "---------------------------------------------------------------\n");
+    if (rank == 0)
+        fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Perform the actual measurements.
-    fprintf(stdout, "measurements...\n");
+    if (rank == 0)
+        fprintf(stdout, "measurements...\n");
+    MPI_Barrier(MPI_COMM_WORLD);
+
     double val = 0;
     for (int c = 0; c < world_size; c++)
     {
@@ -101,8 +112,10 @@ int main(int argc, char *argv[])
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
-    fprintf(stdout, "dummy=%f\n", val);
-    fprintf(stdout, "---------------------------------------------------------------\n");
+    if (rank == 0)
+        fprintf(stdout, "dummy=%f\n", val);
+    if (rank == 0)
+        fprintf(stdout, "---------------------------------------------------------------\n");
 
     if (rank == 0)
     {

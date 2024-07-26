@@ -14,8 +14,7 @@ numactl -H
 
 echo "===== Experiments"
 module purge
-module load iimpi
-module load GCCcore/.12.3.0
+module load iimpi/2023a
 module load Clang/16.0.6-CUDA-12.1.1
 
 # switch to directory
@@ -41,5 +40,4 @@ else
     TARGET_EXT=${GPU_ARCH} CCFLAGS="-O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=${GPU_ARCH}" make
     # run app
     TARGET_EXT=${GPU_ARCH} srun --distribution=block:block ${FLAGS_MPI_BATCH} make run_no_numa
-
 fi

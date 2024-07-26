@@ -35,7 +35,7 @@ default: makedir all
 
 # non-phony targets
 $(TARGET): $(OBJ)
-	$(MPICC) $(CCFLAGS) -o $@ $(OBJ)
+	$(MPICC) $(CCFLAGS) -o $@ $(OBJ) -lnuma
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
 	$(MPICC) $(CCOBJFLAGS) -o $@ $<
@@ -44,7 +44,7 @@ $(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
 	$(MPICC) $(CCOBJFLAGS) $(DBGFLAGS) -o $@ $<
 
 $(TARGET_DEBUG): $(OBJ_DEBUG)
-	$(MPICC) $(CCFLAGS) $(DBGFLAGS) $(OBJ_DEBUG) -o $@
+	$(MPICC) $(CCFLAGS) $(DBGFLAGS) $(OBJ_DEBUG) -o $@ -lnuma
 
 # phony rules
 .PHONY: makedir
