@@ -2,13 +2,14 @@
 #include <mpi.h>
 #include <numa.h>
 #include <omp.h>
+#include <sched.h>
 #include <stdio.h>
 
 #ifndef REPS
 #define REPS 100000
 #endif
 
-int main(int argc, char const *argv[])
+int main(int argc, char *argv[])
 {
     int ncores;
     int ndev;
@@ -35,7 +36,7 @@ int main(int argc, char const *argv[])
     fprintf(stdout, "---------------------------------------------------------------\n");
 
     // Allocate the memory to store the result data.
-    latency_pp = (double **)malloc(ndev * sizeof(double *));
+    latency_pp = (double *)malloc(ndev * sizeof(double *));
 
     for (int c = 0; c < world_size; c++)
     {

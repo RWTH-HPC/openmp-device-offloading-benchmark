@@ -14,9 +14,9 @@ numactl -H
 
 echo "===== Experiments"
 module purge
+module load iimpi
 module load GCCcore/.12.3.0
 module load Clang/16.0.6-CUDA-12.1.1
-module load 
 
 # switch to directory
 cd ../benchmarks/latency
@@ -24,6 +24,7 @@ cd ../benchmarks/latency
 export OMP_NUM_THREADS=1
 export OMP_PLACES=cores
 export OMP_PROC_BIND=close
+export I_MPI_CC=${CC}
 
 if [[ "${USE_CUDA}" = "1" ]]
 then
@@ -40,4 +41,5 @@ else
     TARGET_EXT=${GPU_ARCH} CCFLAGS="-O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=${GPU_ARCH}" make
     # run app
     TARGET_EXT=${GPU_ARCH} srun --distribution=block:cyclic ${FLAGS_MPI_BATCH} make run_no_numa
+
 fi
