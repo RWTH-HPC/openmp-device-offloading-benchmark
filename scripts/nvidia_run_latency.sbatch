@@ -40,6 +40,6 @@ else
     # build app
     TARGET_EXT=${GPU_ARCH} CCFLAGS="-O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=${GPU_ARCH}" make
     # run app
-    TARGET_EXT=${GPU_ARCH} srun --distribution=block:cyclic ${FLAGS_MPI_BATCH} make run_no_numa
+    TARGET_EXT=${GPU_ARCH} srun --distribution=block:block ${FLAGS_MPI_BATCH} make run_no_numa
 
 fi

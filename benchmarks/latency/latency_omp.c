@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
         latency = (double *)malloc(world_size * ndev * sizeof(double *));
     }
 
-    MPI_Gather(&latency_pp, ndev, MPI_DOUBLE, latency, ndev, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Gather(latency_pp, ndev, MPI_DOUBLE, latency, ndev, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Reduce(&min_latency, &global_min_latency, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
 
     if (rank == 0)
