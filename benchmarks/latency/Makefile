@@ -1,4 +1,5 @@
 # tool macros
+MPICC ?= mpiicc
 CC ?= clang
 REPS ?= 100000
 CCFLAGS ?= -O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=sm_70 -DREPS=${REPS}
@@ -34,16 +35,16 @@ default: makedir all
 
 # non-phony targets
 $(TARGET): $(OBJ)
-	$(CC) $(CCFLAGS) -o $@ $(OBJ)
+	$(MPICC) $(CCFLAGS) -o $@ $(OBJ)
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
-	$(CC) $(CCOBJFLAGS) -o $@ $<
+	$(MPICC) $(CCOBJFLAGS) -o $@ $<
 
 $(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
-	$(CC) $(CCOBJFLAGS) $(DBGFLAGS) -o $@ $<
+	$(MPICC) $(CCOBJFLAGS) $(DBGFLAGS) -o $@ $<
 
 $(TARGET_DEBUG): $(OBJ_DEBUG)
-	$(CC) $(CCFLAGS) $(DBGFLAGS) $(OBJ_DEBUG) -o $@
+	$(MPICC) $(CCFLAGS) $(DBGFLAGS) $(OBJ_DEBUG) -o $@
 
 # phony rules
 .PHONY: makedir

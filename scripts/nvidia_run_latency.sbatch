@@ -16,11 +16,13 @@ echo "===== Experiments"
 module purge
 module load GCCcore/.12.3.0
 module load Clang/16.0.6-CUDA-12.1.1
+module load 
 
 # switch to directory
 cd ../benchmarks/latency
 
-export OMP_PLACES=`numactl -H | grep cpus | awk '(NF>3) {for (i = 4; i <= NF; i++) printf "%d,", $i}' | sed 's/.$//'`
+export OMP_NUM_THREADS=1
+export OMP_PLACES=cores
 export OMP_PROC_BIND=close
 
 if [[ "${USE_CUDA}" = "1" ]]
@@ -37,5 +39,5 @@ else
     # build app
     TARGET_EXT=${GPU_ARCH} CCFLAGS="-O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=${GPU_ARCH}" make
     # run app
-    TARGET_EXT=${GPU_ARCH} make run_no_numa
+    TARGET_EXT=${GPU_ARCH} srun --distribution=block:cyclic ${FLAGS_MPI_BATCH} make run_no_numa
 fi
