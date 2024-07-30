@@ -1,4 +1,5 @@
 # tool macros
+MPICC ?= mpiicc
 CC := hipcc
 REPS ?= 100000
 CCFLAGS:=-O3 -std=c++17 -fopenmp --offload-arch=gfx90a -DREPS=${REPS}
@@ -34,16 +35,16 @@ default: makedir all
 
 # non-phony targets
 $(TARGET): $(OBJ)
-	$(CC) $(CCFLAGS) -o $@ $(OBJ)
+	I_MPI_CC=${CC} $(MPICC) $(CCFLAGS) -o $@ $(OBJ) -lnuma
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
-	$(CC) $(CCOBJFLAGS) -o $@ $<
+	I_MPI_CC=${CC} $(MPICC) $(CCOBJFLAGS) -o $@ $<
 
 $(DBG_PATH)/%.o: $(SRC_PATH)/%.c*
-	$(CC) $(CCOBJFLAGS) $(DBGFLAGS) -o $@ $<
+	I_MPI_CC=${CC} $(MPICC) $(CCOBJFLAGS) $(DBGFLAGS) -o $@ $<
 
 $(TARGET_DEBUG): $(OBJ_DEBUG)
-	$(CC) $(CCFLAGS) $(DBGFLAGS) $(OBJ_DEBUG) -o $@
+	I_MPI_CC=${CC} $(MPICC) $(CCFLAGS) $(DBGFLAGS) $(OBJ_DEBUG) -o $@ -lnuma
 
 # phony rules
 .PHONY: makedir

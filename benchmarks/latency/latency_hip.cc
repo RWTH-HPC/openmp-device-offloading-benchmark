@@ -1,7 +1,8 @@
-#include <cstdio>
+#include "../common/util.h"
 #include <cfloat>
-
+#include <cstdio>
 #include <hip/hip_runtime.h>
+#include <mpi.h>
 #include <omp.h>
 
 #ifndef REPS
@@ -12,139 +13,138 @@
 #define KERNEL_N (5720 * 64)
 
 // Define macro to automate error handling of the HIP API calls
-#define HIPCALL(func)                                                \
-    {                                                                \
-        hipError_t ret = func;                                       \
-        if (ret != hipSuccess) {                                     \
-            fprintf(stderr,                                          \
-                    "HIP error: '%s' at %s:%d\n",                    \
-                    hipGetErrorString(ret), __FUNCTION__, __LINE__); \
-            abort();                                                 \
-        }                                                            \
+#define HIPCALL(func)                                                                                                  \
+    {                                                                                                                  \
+        hipError_t ret = func;                                                                                         \
+        if (ret != hipSuccess)                                                                                         \
+        {                                                                                                              \
+            fprintf(stderr, "HIP error: '%s' at %s:%d\n", hipGetErrorString(ret), __FUNCTION__, __LINE__);             \
+            abort();                                                                                                   \
+        }                                                                                                              \
     }
 
-
-__global__ void empty() {
+__global__ void empty()
+{
     // do nothing!
 }
 
-int main(int argc, char const * argv[]) {
+int main(int argc, char const *argv[])
+{
     int ncores;
     int ndev;
-    double ** latency = NULL;
-    double min_latency = DBL_MAX;
+    double *latency = NULL;
+    double *latency_pp = NULL;
+    double local_min_latency = DBL_MAX;
+    double global_min_latency = DBL_MAX;
     const double usec = 1000.0 * 1000.0;
+
+    MPI_Init(&argc, &argv);
+    int rank, world_size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
     // Determine number of cores and devices.
     HIPCALL(hipGetDeviceCount(&ndev));
     ncores = omp_get_num_procs();
 
-    fprintf(stdout, "---------------------------------------------------------------\n");
-    fprintf(stdout, "number of cores:   %d\n", ncores);
-    fprintf(stdout, "number of devices: %d\n", ndev);
-    fprintf(stdout, "number of repetitions: %d\n", REPS);
-    fprintf(stdout, "---------------------------------------------------------------\n");
-
     // Streams to the devices
-    hipStream_t * stream = new hipStream_t[ndev];
-    
+    hipStream_t *stream = new hipStream_t[ndev];
     // Allocate the memory to store the result data.
-    latency = (double **)malloc(ncores * sizeof(double *));
-    for (int c = 0; c < ncores; c++) {
-        latency[c] = (double *)malloc(ndev * sizeof(double));
+    latency_pp = (double *)malloc(ndev * sizeof(double));
+
+    print_separator(rank);
+
+    if (rank == 0)
+    {
+        fprintf(stderr, "number of cores for process: %d\n", ncores);
+        fprintf(stderr, "number of processes: %d\n", world_size);
+        fprintf(stderr, "number of devices: %d\n", ndev);
+        fprintf(stderr, "number of repetitions: %d\n", REPS);
     }
 
-    // Print the OpenMP thread affinity info.
-    #pragma omp parallel num_threads(ncores)
-    {
-        omp_display_affinity(NULL);
-    }
-    fprintf(stdout, "---------------------------------------------------------------\n");
+    print_separator(rank);
+    print_cpu_affinity(world_size, rank);
+    print_separator(rank);
 
     // Perform some warm-up to make sure that all threads are up and running,
     // and the GPUs have been properly initialized.
-    fprintf(stdout, "warm up...\n");
-    #pragma omp parallel num_threads(ncores)
+    if (rank == 0)
     {
-        for (int c = 0; c < ncores; c++) {
-            if (omp_get_thread_num() == c) {
-                for (int d = 0; d < ndev; d++) {
-                    HIPCALL(hipSetDevice(d));
-                    HIPCALL(hipStreamCreate(&stream[d]));
-                    empty<<<KERNEL_N, 64, 0, stream[d]>>>();
-                    HIPCALL(hipStreamSynchronize(stream[d]));
-                }
-            }
-            #pragma omp barrier
-        }
+        fprintf(stderr, "warm up...\n");
     }
-    fprintf(stdout, "---------------------------------------------------------------\n");
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    for (int c = 0; c < world_size; c++)
+    {
+        if (rank == c)
+        {
+            for (int d = 0; d < ndev; d++)
+            {
+                HIPCALL(hipSetDevice(d));
+                HIPCALL(hipStreamCreate(&stream[d]));
+                empty<<<KERNEL_N, 64, 0, stream[d]>>>();
+                HIPCALL(hipStreamSynchronize(stream[d]));
+            }
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+
+    print_separator(rank);
 
     // Perform the actual measurements.
-    fprintf(stdout, "measurements...\n");
-    double val = 0;
-    #pragma omp parallel num_threads(ncores)
+    if (rank == 0)
     {
-        for (int c = 0; c < ncores; c++) {
-            if (omp_get_thread_num() == c) {
-                for (int d = 0; d < ndev; d++) {
-                    fprintf(stdout, "running for thread=%3d and device=%2d\n", c, d);
-                    fflush(stdout);
-                    HIPCALL(hipSetDevice(d));
-                    double ts = omp_get_wtime();
-                    for (int r = 0; r < REPS; r++) {
-                        empty<<<KERNEL_N, 64, 0, stream[d]>>>();
-                    }
-                    HIPCALL(hipStreamSynchronize(stream[d]));
-                    double te = omp_get_wtime();
-                    latency[c][d] = (te - ts) / ((double) REPS) * usec;
-                    if(latency[c][d] < min_latency) {
-                        min_latency = latency[c][d];
-                    }
+        fprintf(stderr, "measurements...\n");
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    for (int c = 0; c < world_size; c++)
+    {
+        if (rank == c)
+        {
+            for (int d = 0; d < ndev; d++)
+            {
+                fprintf(stderr, "running for process=%3d and device=%2d --> ", c, d);
+                HIPCALL(hipSetDevice(d));
+
+                double ts = omp_get_wtime();
+                for (int r = 0; r < REPS; r++)
+                {
+                    empty<<<KERNEL_N, 64, 0, stream[d]>>>();
                 }
+                HIPCALL(hipStreamSynchronize(stream[d]));
+                double te = omp_get_wtime();
+                latency_pp[d] = (te - ts) / ((double)REPS) * usec;
+                if (latency_pp[d] < local_min_latency)
+                {
+                    local_min_latency = latency_pp[d];
+                }
+                fprintf(stderr, "avg. lat = %f\n", latency_pp[d]);
             }
-            #pragma omp barrier
         }
-    }
-    fprintf(stdout, "dummy=%f\n", val);
-    fprintf(stdout, "---------------------------------------------------------------\n");
-
-
-    fprintf(stdout, "---------------------------------------------------------------\n");
-    fprintf(stdout, "Absolute measurements (us)\n");
-    fprintf(stdout, "---------------------------------------------------------------\n");
-    fprintf(stdout, ";");
-    for (int c = 0; c < ncores; c++) {
-        fprintf(stdout, "Core %d%c", c, c<ncores-1 ? ';' : '\n');
-    }
-    for (int d = 0; d < ndev; d++) {
-        fprintf(stdout, "GPU %d;", d);
-        for (int c = 0; c < ncores; c++) {
-            fprintf(stdout, "%lf%c", latency[c][d], c<ncores-1 ? ';' : '\n');
-        }
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 
-    fprintf(stdout, "---------------------------------------------------------------\n");
-    fprintf(stdout, "Relative measurements to minimum latency\n");
-    fprintf(stdout, "---------------------------------------------------------------\n");
-    fprintf(stdout, ";");
-    for (int c = 0; c < ncores; c++) {
-        fprintf(stdout, "Core %d%c", c, c<ncores-1 ? ';' : '\n');
+    print_separator(rank);
+
+    if (rank == 0)
+    {
+        latency = (double *)malloc(world_size * ndev * sizeof(double));
     }
-    for (int d = 0; d < ndev; d++) {
-        fprintf(stdout, "GPU %d;", d);
-        for (int c = 0; c < ncores; c++) {
-            fprintf(stdout, "%lf%c", (latency[c][d] / min_latency), c<ncores-1 ? ';' : '\n');
-        }
+
+    MPI_Gather(latency_pp, ndev, MPI_DOUBLE, latency, ndev, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&local_min_latency, &global_min_latency, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+
+    if (rank == 0)
+    {
+        print_results(world_size, ndev, latency, global_min_latency, 1);
+        free(latency);
     }
 
     // cleanup
+    free(latency_pp);
     delete[] stream;
-    
-    for (int c = 0; c < ncores; c++) {
-        free(latency[c]);
-    }
-    free(latency);
+    MPI_Finalize();
 
     return 0;
 }

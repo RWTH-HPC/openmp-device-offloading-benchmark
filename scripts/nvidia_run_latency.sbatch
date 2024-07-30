@@ -23,7 +23,6 @@ cd ../benchmarks/latency
 export OMP_NUM_THREADS=1
 export OMP_PLACES=cores
 export OMP_PROC_BIND=close
-export I_MPI_CC=${CC}
 
 if [[ "${USE_CUDA}" = "1" ]]
 then
@@ -32,7 +31,7 @@ then
     # build app
     TARGET_EXT=${GPU_ARCH} make -f Makefile.cuda
     # run app
-    TARGET_EXT=${GPU_ARCH} make -f Makefile.cuda run_no_numa
+    TARGET_EXT=${GPU_ARCH} srun --distribution=block:block ${FLAGS_MPI_BATCH} make -f Makefile.cuda run_no_numa
 else
     # clean first
     TARGET_EXT=${GPU_ARCH} make clean
