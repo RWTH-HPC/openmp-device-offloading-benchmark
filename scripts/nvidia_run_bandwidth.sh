@@ -10,15 +10,15 @@ export USE_CUDA=0
 
 # CLAIX 2016
 export GPU_ARCH=sm_60
-sbatch --partition=c16g --gres=gpu:pascal:2 --account=supp0001 --export=GPU_ARCH,USE_CUDA --output=${RES_DIR}/results_bw_c16g.txt nvidia_run_bandwidth.sbatch
+sbatch --partition=c16g --ntasks-per-node=24 --gres=gpu:pascal:2 --account=supp0001 --export=GPU_ARCH,USE_CUDA --output=${RES_DIR}/results_bw_c16g.txt nvidia_run_bandwidth.sbatch
 
 # CLAIX 2018
 export GPU_ARCH=sm_70
-sbatch --partition=c18g --gres=gpu:2 --account=supp0001 --export=GPU_ARCH,USE_CUDA --output=${RES_DIR}/results_bw_c18g.txt nvidia_run_bandwidth.sbatch
+sbatch --partition=c18g --ntasks-per-node=48 --gres=gpu:2 --account=supp0001 --export=GPU_ARCH,USE_CUDA --output=${RES_DIR}/results_bw_c18g.txt nvidia_run_bandwidth.sbatch
 
 # CLAIX 2023
 export GPU_ARCH=sm_90
-sbatch --partition=c23g --gres=gpu:4 --account=supp0001 --export=GPU_ARCH,USE_CUDA --output=${RES_DIR}/results_bw_c23g.txt nvidia_run_bandwidth.sbatch
+sbatch --partition=c23g --ntasks-per-node=96 --gres=gpu:4 --account=supp0001 --export=GPU_ARCH,USE_CUDA --output=${RES_DIR}/results_bw_c23g.txt nvidia_run_bandwidth.sbatch
 
 ####################################################
 ### CUDA based (w/ alloc included)

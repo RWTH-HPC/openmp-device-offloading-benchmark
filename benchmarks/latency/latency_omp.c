@@ -10,25 +10,28 @@
 
 int main(int argc, char *argv[])
 {
-    int ncores;
-    int ndev;
+    // ######################################################################
+    // ### Variable declaration
+    // ######################################################################
+
+    int ncores, ndev;
     double *latency = NULL;
-    double *latency_pp = NULL;
     double local_min_latency = DBL_MAX;
     double global_min_latency = DBL_MAX;
     const double usec = 1000.0 * 1000.0;
 
-    MPI_Init(&argc, &argv);
+    // ######################################################################
+    // ### MPI initialization + additional info
+    // ######################################################################
+
     int rank, world_size;
+    MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
     // Determine number of cores and devices.
     ndev = omp_get_num_devices();
     ncores = omp_get_num_procs();
-
-    // Allocate the memory to store the result data.
-    latency_pp = (double *)malloc(ndev * sizeof(double));
 
     print_separator(rank);
 
@@ -44,13 +47,19 @@ int main(int argc, char *argv[])
     print_cpu_affinity(world_size, rank);
     print_separator(rank);
 
-    // Perform some warm-up to make sure that all threads are up and running,
-    // and the GPUs have been properly initialized.
-    if (rank == 0)
-    {
-        fprintf(stderr, "warm up...\n");
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+    // ######################################################################
+    // ### Memory allocation
+    // ######################################################################
+
+    // Allocate the memory to store the result data.
+    latency = (double *)malloc(ndev * sizeof(double));
+
+    // ######################################################################
+    // ### Perform some warm-up to make sure that all threads are up and
+    // ### running, and the GPUs have been properly initialized.
+    // ######################################################################
+
+    print_from_root(rank, "warm up...\n");
 
     for (int c = 0; c < world_size; c++)
     {
@@ -66,15 +75,13 @@ int main(int argc, char *argv[])
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
-
     print_separator(rank);
 
-    // Perform the actual measurements.
-    if (rank == 0)
-    {
-        fprintf(stderr, "measurements...\n");
-    }
-    MPI_Barrier(MPI_COMM_WORLD);
+    // ######################################################################
+    // ### Perform the actual measurements
+    // ######################################################################
+
+    print_from_root(rank, "measurements...\n");
 
     double val = 0;
     for (int c = 0; c < world_size; c++)
@@ -92,39 +99,49 @@ int main(int argc, char *argv[])
 #pragma omp target device(d)
                     {
                         // do nothing
-                        // val += c*d+r; // <== might avoid compiler from optimizing out codes or regions
+                        // val += c*d+r; // <== might avoid compiler from optimizing out code or regions
                     }
                 }
                 double te = omp_get_wtime();
-                latency_pp[d] = (te - ts) / ((double)REPS) * usec;
-                if (latency_pp[d] < local_min_latency)
+                latency[d] = (te - ts) / ((double)REPS) * usec;
+                if (latency[d] < local_min_latency)
                 {
-                    local_min_latency = latency_pp[d];
+                    local_min_latency = latency[d];
                 }
-                fprintf(stderr, "avg. lat = %f\n", latency_pp[d]);
+                fprintf(stderr, "avg. lat = %f\n", latency[d]);
             }
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
-
     print_separator(rank);
 
+    // ######################################################################
+    // ### Gathering and printing results
+    // ######################################################################
+
+    double *global_latency = NULL;
     if (rank == 0)
     {
-        latency = (double *)malloc(world_size * ndev * sizeof(double));
+        global_latency = (double *)malloc(world_size * ndev * sizeof(double));
     }
 
-    MPI_Gather(latency_pp, ndev, MPI_DOUBLE, latency, ndev, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Gather(latency, ndev, MPI_DOUBLE, global_latency, ndev, MPI_DOUBLE, 0, MPI_COMM_WORLD);
     MPI_Reduce(&local_min_latency, &global_min_latency, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
 
     if (rank == 0)
     {
-        print_results(world_size, ndev, latency, global_min_latency, 1);
-        free(latency);
+        print_lat_results(world_size, ndev, global_latency, global_min_latency);
     }
 
-    // cleanup
-    free(latency_pp);
+    // ######################################################################
+    // ### Cleanup and finalization
+    // ######################################################################
+    if (rank == 0)
+    {
+        free(global_latency);
+    }
+    free(latency);
+
     MPI_Finalize();
 
     return 0;
