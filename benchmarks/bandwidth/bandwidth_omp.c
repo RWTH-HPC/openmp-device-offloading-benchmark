@@ -6,7 +6,7 @@
 #include <string.h>
 
 #ifndef REPS
-#define REPS 20
+#define REPS 10
 #endif
 
 int main(int argc, char *argv[])
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 
     if (rank == 0)
     {
-        fprintf(stdout, "number of array sizes: %d\n", nsizes);
+        fprintf(stderr, "number of array sizes: %d\n", nsizes);
         fprintf(stderr, "number of cores for process: %d\n", ncores);
         fprintf(stderr, "number of processes: %d\n", world_size);
         fprintf(stderr, "number of devices: %d\n", ndev);
