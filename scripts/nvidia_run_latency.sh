@@ -17,8 +17,9 @@ export USE_CUDA=0
 # sbatch --partition=c18g --ntasks-per-node=48 --gres=gpu:2 --account=supp0001 --export=GPU_ARCH,USE_CUDA --output=${RES_DIR}/results_lat_c18g.txt nvidia_run_latency.sbatch
 
 # CLAIX 2023
+# Note: OpenMP Version crashes with more than 72 processes
 export GPU_ARCH=sm_90
-sbatch --partition=c23g --ntasks-per-node=96 --gres=gpu:4 --account=supp0001 --export=GPU_ARCH,USE_CUDA --output=${RES_DIR}/results_lat_c23g.txt nvidia_run_latency.sbatch
+sbatch --partition=c23g --ntasks-per-node=72 --gres=gpu:4 --account=supp0001 --export=GPU_ARCH,USE_CUDA --output=${RES_DIR}/results_lat_c23g.txt nvidia_run_latency.sbatch
 
 ####################################################
 ### CUDA based
