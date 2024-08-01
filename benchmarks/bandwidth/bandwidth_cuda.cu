@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
     // ### Variable declaration
     // ######################################################################
 
-    const int nsizes = 3;
-    size_t array_sizes_bytes[3] = {10000000, 100000000, 1000000000};
+    const int nsizes = 1;
+    size_t array_sizes_bytes[1] = {1000000000};
     const size_t MAX_BUF_SIZE = 1000000000;
     int ncores, ndev;
     double *times_abs = NULL;     // local measurements for absolute time

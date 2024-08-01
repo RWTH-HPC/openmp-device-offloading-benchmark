@@ -5,6 +5,7 @@
 
 GPU_ARCH=${GPU_ARCH:-"sm_70"}
 USE_CUDA=${USE_CUDA:-0}
+CPU_BIND=${CPU_BIND:-"--distribution=block:cyclic"}
 
 echo "===== hostname"
 hostname
@@ -21,8 +22,7 @@ module load Clang/18.1.2-CUDA-12.3.0
 cd ../benchmarks/latency
 
 export OMP_NUM_THREADS=1
-export OMP_PLACES=cores
-export OMP_PROC_BIND=close
+export OMP_PROC_BIND=false
 
 if [[ "${USE_CUDA}" = "1" ]]
 then
@@ -31,12 +31,12 @@ then
     # build app
     TARGET_EXT=${GPU_ARCH} make -f Makefile.cuda
     # run app
-    TARGET_EXT=${GPU_ARCH} srun --distribution=block:block ${FLAGS_MPI_BATCH} make -f Makefile.cuda run_no_numa
+    TARGET_EXT=${GPU_ARCH} srun ${FLAGS_MPI_BATCH} ${CPU_BIND} make -f Makefile.cuda run
 else
     # clean first
     TARGET_EXT=${GPU_ARCH} make clean
     # build app
     TARGET_EXT=${GPU_ARCH} CCFLAGS="-O3 -std=gnu99 -fopenmp -fopenmp-targets=nvptx64 -Xopenmp-target -march=${GPU_ARCH}" make
     # run app
-    TARGET_EXT=${GPU_ARCH} srun --distribution=block:block ${FLAGS_MPI_BATCH} make run_no_numa
+    TARGET_EXT=${GPU_ARCH} srun ${FLAGS_MPI_BATCH} ${CPU_BIND} make run
 fi
