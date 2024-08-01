@@ -5,7 +5,7 @@
 
 GPU_ARCH=${GPU_ARCH:-"mi250"}
 USE_HIP=${USE_HIP:-0}
-CPU_BIND=${CPU_BIND:-"--distribution=block:cyclic"}
+MPICMD=${MPICMD:-"srun --distribution=block:cyclic"}
 
 echo "===== hostname"
 hostname
@@ -14,6 +14,11 @@ echo "===== numactl -H"
 numactl -H
 
 echo "===== Experiments"
+module load aomp/17.0-0
+module load openmpi/aomp/4.1.1
+
+export MPICC=mpicc
+
 # switch to directory
 cd ../benchmarks/latency
 
@@ -27,12 +32,12 @@ then
     # build app
     TARGET_EXT=${GPU_ARCH} make -f Makefile.hip REPS=1000
     # run app
-    TARGET_EXT=${GPU_ARCH} srun ${CPU_BIND} make -f Makefile.hip run
+    TARGET_EXT=${GPU_ARCH} ${MPICMD} make -f Makefile.hip run
 else
     # clean first
     TARGET_EXT=${GPU_ARCH} make clean
     # build app
-    TARGET_EXT=${GPU_ARCH} CC=amdclang CCFLAGS="-O3 -std=gnu99 -fopenmp -fopenmp-targets=amdgcn-amd-amdhsa -Xopenmp-target=amdgcn-amd-amdhsa -march=gfx90a" make
+    TARGET_EXT=${GPU_ARCH} CC=amdclang CCFLAGS="-O3 -std=gnu99 -fopenmp -fopenmp-targets=amdgcn-amd-amdhsa -Xopenmp-target=amdgcn-amd-amdhsa -march=gfx90a -Wno-error=implicit-function-declaration" make
     # run app
-    TARGET_EXT=${GPU_ARCH} srun ${CPU_BIND} make run
+    TARGET_EXT=${GPU_ARCH} ${MPICMD} make run
 fi
