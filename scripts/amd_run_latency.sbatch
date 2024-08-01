@@ -16,7 +16,6 @@ numactl -H
 echo "===== Experiments"
 module load aomp/17.0-0
 module load openmpi/aomp/4.1.1
-
 export MPICC=mpicc
 
 # switch to directory
